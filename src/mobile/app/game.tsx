@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
   Share,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import { BingoCard } from '../components/BingoCard';
 import { NumberBall } from '../components/NumberBall';
 import { PlayerList } from '../components/PlayerList';
 import { useSocket } from '../hooks/useSocket';
+import { useResponsive } from '../hooks/useResponsive';
 import type { BingoCard as BingoCardType, Player } from '../types';
 
 export default function GameScreen() {
@@ -26,6 +28,7 @@ export default function GameScreen() {
 
   const { roomId, playerId, hostPin } = params;
   const initialCard: BingoCardType = JSON.parse(params.cardData);
+  const { isDesktop, isTablet, isWeb } = useResponsive();
 
   const [card, setCard] = useState<BingoCardType>(initialCard);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
@@ -54,9 +57,7 @@ export default function GameScreen() {
     onBingoWinner: handleBingoWinner,
   });
 
-  // 番号をマークしたらカードを更新
   const handleMarkNumber = (number: number) => {
-    // ローカル状態を更新
     const newMarked = card.marked.map((row, rowIndex) =>
       row.map((marked, colIndex) => {
         if (card.numbers[rowIndex][colIndex] === number) {
@@ -66,41 +67,61 @@ export default function GameScreen() {
       })
     );
     setCard({ ...card, marked: newMarked });
-
-    // サーバーに通知
     markNumber(number);
   };
 
-  // 抽選ボタン
   const handleDraw = () => {
     if (hostPin) {
       drawNumber(hostPin);
     }
   };
 
-  // ビンゴ宣言
   const handleDeclareBingo = () => {
-    Alert.alert(
-      'Declare BINGO!',
-      'Are you sure you have BINGO?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, BINGO!',
-          onPress: () => declareBingo(),
-        },
-      ]
-    );
+    const confirmBingo = () => declareBingo();
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you have BINGO?')) {
+        confirmBingo();
+      }
+    } else {
+      Alert.alert(
+        'Declare BINGO!',
+        'Are you sure you have BINGO?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Yes, BINGO!', onPress: confirmBingo },
+        ]
+      );
+    }
   };
 
-  // ルームコードを共有
   const handleShareRoom = async () => {
-    try {
-      await Share.share({
-        message: `Join my Bingo game! Room Code: ${roomId}`,
-      });
-    } catch (error) {
-      console.error('Share error:', error);
+    const message = `Join my Bingo game!\nRoom Code: ${roomId}`;
+
+    if (Platform.OS === 'web') {
+      try {
+        await navigator.clipboard.writeText(message);
+        window.alert('Room code copied to clipboard!');
+      } catch {
+        window.alert(message);
+      }
+    } else {
+      try {
+        await Share.share({ message });
+      } catch (error) {
+        console.error('Share error:', error);
+      }
+    }
+  };
+
+  const copyRoomCode = async () => {
+    if (Platform.OS === 'web') {
+      try {
+        await navigator.clipboard.writeText(roomId!);
+        window.alert('Room code copied!');
+      } catch {
+        window.alert(`Room Code: ${roomId}`);
+      }
     }
   };
 
@@ -113,6 +134,136 @@ export default function GameScreen() {
     );
   }
 
+  // デスクトップ用2カラムレイアウト
+  if (isDesktop) {
+    return (
+      <View style={styles.desktopContainer}>
+        {/* 左サイドバー: 管理者パネル + 参加者 */}
+        <View style={styles.sidebar}>
+          {/* 接続状態 */}
+          <View style={styles.statusCard}>
+            <View style={styles.connectionStatus}>
+              <View
+                style={[
+                  styles.statusDot,
+                  isConnected ? styles.statusConnected : styles.statusDisconnected,
+                ]}
+              />
+              <Text style={styles.statusText}>
+                {isConnected ? 'Connected' : 'Connecting...'}
+              </Text>
+            </View>
+          </View>
+
+          {/* ルーム情報（ホストのみ） */}
+          {isHost && (
+            <View style={styles.roomInfoCard}>
+              <Text style={styles.cardTitle}>Room Info</Text>
+              <View style={styles.roomCodeRow}>
+                <Text style={styles.roomCodeLabel}>Code:</Text>
+                <TouchableOpacity onPress={copyRoomCode} style={styles.roomCodeButton}>
+                  <Text style={styles.roomCode}>{roomId}</Text>
+                  <Ionicons name="copy-outline" size={16} color="#4A90D9" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={handleShareRoom} style={styles.shareButtonDesktop}>
+                <Ionicons name="share-outline" size={18} color="#fff" />
+                <Text style={styles.shareButtonTextDesktop}>Share Room</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* 参加者リスト */}
+          <View style={styles.playersCard}>
+            <PlayerList players={players} currentPlayerId={playerId} />
+          </View>
+        </View>
+
+        {/* メインコンテンツ */}
+        <ScrollView style={styles.mainContent} contentContainerStyle={styles.mainContentInner}>
+          {/* 現在の番号 */}
+          <View style={styles.currentNumberSection}>
+            <Text style={styles.sectionTitleDesktop}>Current Number</Text>
+            <NumberBall number={currentNumber} />
+          </View>
+
+          {/* 管理者用：抽選ボタン */}
+          {isHost && (
+            <TouchableOpacity
+              style={styles.drawButtonDesktop}
+              onPress={handleDraw}
+              disabled={!isConnected || room?.status === 'finished'}
+            >
+              <Ionicons name="dice" size={28} color="#fff" />
+              <Text style={styles.drawButtonTextDesktop}>Draw Number</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* 抽選履歴 */}
+          <View style={styles.historySection}>
+            <Text style={styles.sectionTitleDesktop}>
+              Drawn Numbers ({drawnNumbers.length}/75)
+            </Text>
+            <View style={styles.historyGrid}>
+              {drawnNumbers
+                .slice()
+                .reverse()
+                .slice(0, 20)
+                .map((num) => (
+                  <View key={num} style={styles.historyBallDesktop}>
+                    <NumberBall number={num} size="small" />
+                  </View>
+                ))}
+            </View>
+            {drawnNumbers.length > 20 && (
+              <Text style={styles.historyMore}>
+                +{drawnNumbers.length - 20} more numbers
+              </Text>
+            )}
+          </View>
+
+          {/* ビンゴカード */}
+          <View style={styles.cardSectionDesktop}>
+            <Text style={styles.sectionTitleDesktop}>Your Card</Text>
+            <BingoCard
+              card={card}
+              drawnNumbers={drawnNumbers}
+              onMarkNumber={handleMarkNumber}
+            />
+          </View>
+
+          {/* ビンゴ宣言ボタン */}
+          <TouchableOpacity
+            style={styles.bingoButtonDesktop}
+            onPress={handleDeclareBingo}
+            disabled={!isConnected}
+          >
+            <Text style={styles.bingoButtonTextDesktop}>BINGO!</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* 当選者モーダル */}
+        {showWinnerModal && winner && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContentDesktop}>
+              <Text style={styles.modalTitleDesktop}>BINGO!</Text>
+              <Ionicons name="trophy" size={100} color="#FFD700" />
+              <Text style={styles.winnerNameDesktop}>{winner.name}</Text>
+              <Text style={styles.winnerText}>wins!</Text>
+              <TouchableOpacity
+                style={styles.modalButtonDesktop}
+                onPress={() => setShowWinnerModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // モバイル/タブレットレイアウト
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* 接続状態 */}
@@ -138,10 +289,11 @@ export default function GameScreen() {
 
       {/* ルーム情報 */}
       {isHost && (
-        <View style={styles.roomInfo}>
+        <TouchableOpacity style={styles.roomInfo} onPress={isWeb ? copyRoomCode : undefined}>
           <Text style={styles.roomCodeLabel}>Room Code:</Text>
-          <Text style={styles.roomCode}>{roomId}</Text>
-        </View>
+          <Text style={styles.roomCodeMobile}>{roomId}</Text>
+          {isWeb && <Ionicons name="copy-outline" size={16} color="#4A90D9" />}
+        </TouchableOpacity>
       )}
 
       {/* 現在の番号 */}
@@ -175,7 +327,7 @@ export default function GameScreen() {
           {drawnNumbers
             .slice()
             .reverse()
-            .map((num, index) => (
+            .map((num) => (
               <View key={num} style={styles.historyBall}>
                 <NumberBall number={num} size="small" />
               </View>
@@ -229,6 +381,7 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
+  // モバイルスタイル
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -298,11 +451,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginRight: 8,
   },
-  roomCode: {
+  roomCodeMobile: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    flex: 1,
   },
   currentNumberSection: {
     alignItems: 'center',
@@ -401,5 +555,172 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // デスクトップスタイル
+  desktopContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+  },
+  sidebar: {
+    width: 320,
+    backgroundColor: '#fff',
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+    padding: 20,
+  },
+  statusCard: {
+    marginBottom: 16,
+  },
+  roomInfoCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+  },
+  roomCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roomCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  roomCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'monospace',
+    marginRight: 8,
+  },
+  shareButtonDesktop: {
+    backgroundColor: '#4A90D9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  shareButtonTextDesktop: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  playersCard: {
+    flex: 1,
+  },
+  mainContent: {
+    flex: 1,
+  },
+  mainContentInner: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  sectionTitleDesktop: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  drawButtonDesktop: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 48,
+    borderRadius: 14,
+    marginBottom: 32,
+    gap: 12,
+    // @ts-ignore
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  drawButtonTextDesktop: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '600',
+  },
+  historyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  historyBallDesktop: {
+    margin: 4,
+  },
+  historyMore: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  cardSectionDesktop: {
+    marginVertical: 32,
+    alignItems: 'center',
+  },
+  bingoButtonDesktop: {
+    backgroundColor: '#F44336',
+    paddingVertical: 24,
+    paddingHorizontal: 80,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 32,
+    // @ts-ignore
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  bingoButtonTextDesktop: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: 'bold',
+    letterSpacing: 6,
+  },
+  modalContentDesktop: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 48,
+    alignItems: 'center',
+    minWidth: 400,
+  },
+  modalTitleDesktop: {
+    fontSize: 64,
+    fontWeight: 'bold',
+    color: '#4A90D9',
+    marginBottom: 24,
+  },
+  winnerNameDesktop: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 24,
+  },
+  modalButtonDesktop: {
+    backgroundColor: '#4A90D9',
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginTop: 24,
+    // @ts-ignore
+    cursor: 'pointer',
   },
 });

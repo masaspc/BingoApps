@@ -2,7 +2,7 @@
 
 ## 概要
 
-会社のビンゴ大会で使用するクロスプラットフォーム（iOS/Android）対応のリアルタイムビンゴアプリケーション。
+会社のビンゴ大会で使用するクロスプラットフォーム（iOS/Android/Web）対応のリアルタイムビンゴアプリケーション。
 
 ### 要件
 
@@ -16,7 +16,7 @@
 
 | レイヤー | 技術 | バージョン |
 |---------|------|-----------|
-| **モバイルアプリ** | React Native + Expo | Expo SDK 50+ |
+| **クライアントアプリ** | React Native + Expo (iOS/Android/Web) | Expo SDK 52+ |
 | **言語（共通）** | TypeScript | 5.x |
 | **バックエンド** | Node.js + Express | Node 20 LTS |
 | **リアルタイム通信** | Socket.io | 4.x |

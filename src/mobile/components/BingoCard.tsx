@@ -4,8 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  Platform,
 } from 'react-native';
+import { useResponsive } from '../hooks/useResponsive';
 import type { BingoCard as BingoCardType } from '../types';
 
 interface BingoCardProps {
@@ -15,11 +16,23 @@ interface BingoCardProps {
 }
 
 const HEADER_LABELS = ['B', 'I', 'N', 'G', 'O'];
-const screenWidth = Dimensions.get('window').width;
-const CARD_PADDING = 20;
-const CELL_SIZE = (screenWidth - CARD_PADDING * 2 - 10) / 5;
 
 export function BingoCard({ card, drawnNumbers, onMarkNumber }: BingoCardProps) {
+  const { width, isDesktop, isTablet } = useResponsive();
+
+  // レスポンシブなセルサイズ
+  const getCellSize = () => {
+    if (isDesktop) return 70;
+    if (isTablet) return 60;
+    // モバイルは画面幅に合わせる
+    const CARD_PADDING = 20;
+    return Math.min((width - CARD_PADDING * 2 - 10) / 5, 65);
+  };
+
+  const cellSize = getCellSize();
+  const fontSize = isDesktop ? 24 : isTablet ? 20 : 18;
+  const headerFontSize = isDesktop ? 28 : isTablet ? 24 : 20;
+
   const isNumberDrawn = (number: number): boolean => {
     return drawnNumbers.includes(number);
   };
@@ -32,12 +45,20 @@ export function BingoCard({ card, drawnNumbers, onMarkNumber }: BingoCardProps) 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* ヘッダー行 */}
       <View style={styles.headerRow}>
         {HEADER_LABELS.map((label, index) => (
-          <View key={index} style={styles.headerCell}>
-            <Text style={styles.headerText}>{label}</Text>
+          <View
+            key={index}
+            style={[
+              styles.headerCell,
+              { width: cellSize, height: cellSize * 0.6 },
+            ]}
+          >
+            <Text style={[styles.headerText, { fontSize: headerFontSize }]}>
+              {label}
+            </Text>
           </View>
         ))}
       </View>
@@ -55,8 +76,10 @@ export function BingoCard({ card, drawnNumbers, onMarkNumber }: BingoCardProps) 
                 key={colIndex}
                 style={[
                   styles.cell,
+                  { width: cellSize, height: cellSize },
                   isMarked && styles.markedCell,
                   canMark && styles.canMarkCell,
+                  Platform.OS === 'web' && styles.cellWeb,
                 ]}
                 onPress={() => handleCellPress(rowIndex, colIndex)}
                 disabled={!canMark}
@@ -64,7 +87,9 @@ export function BingoCard({ card, drawnNumbers, onMarkNumber }: BingoCardProps) 
                 <Text
                   style={[
                     styles.cellText,
+                    { fontSize },
                     isMarked && styles.markedCellText,
+                    isFreeSpace && styles.freeSpaceText,
                   ]}
                 >
                   {isFreeSpace ? 'FREE' : number}
@@ -88,39 +113,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    alignSelf: 'center',
+  },
+  containerDesktop: {
+    padding: 16,
+    borderRadius: 16,
   },
   headerRow: {
     flexDirection: 'row',
     marginBottom: 4,
   },
   headerCell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE * 0.6,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#4A90D9',
-    marginHorizontal: 1,
+    marginHorizontal: 2,
     borderRadius: 4,
   },
   headerText: {
     color: '#fff',
-    fontSize: 20,
     fontWeight: 'bold',
   },
   row: {
     flexDirection: 'row',
   },
   cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    marginHorizontal: 1,
-    marginVertical: 1,
+    marginHorizontal: 2,
+    marginVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  cellWeb: {
+    cursor: 'pointer',
+    // @ts-ignore - Web specific
+    transition: 'all 0.2s ease',
   },
   markedCell: {
     backgroundColor: '#4A90D9',
@@ -131,11 +161,13 @@ const styles = StyleSheet.create({
     borderColor: '#FFC107',
   },
   cellText: {
-    fontSize: 18,
     fontWeight: '600',
     color: '#333',
   },
   markedCellText: {
     color: '#fff',
+  },
+  freeSpaceText: {
+    fontSize: 12,
   },
 });
