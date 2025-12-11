@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id            String   @id @default(uuid())
+  name          String
+  hostPin       String
+  status        String   @default("waiting") // waiting, playing, finished
+  drawnNumbers  String   @default("[]") // JSON array of numbers
+  currentNumber Int?
+  createdAt     DateTime @default(now())
+  players       Player[]
+}
+
+model Player {
+  id        String     @id @default(uuid())
+  name      String
+  roomId    String
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  isHost    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  card      BingoCard?
+}
+
+model BingoCard {
+  id       String  @id @default(uuid())
+  playerId String  @unique
+  player   Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  numbers  String  // JSON: 5x5 array
+  marked   String  @default("[]") // JSON: marked positions
+  hasBingo Boolean @default(false)
+}
