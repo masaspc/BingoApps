@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 依存関係インストール
-RUN npm ci --only=production
+# 依存関係インストール（ビルドに必要なdevDependenciesも含む）
+RUN npm install
 
 # Prisma クライアント生成
 RUN npx prisma generate
@@ -17,6 +17,12 @@ COPY . .
 
 # TypeScript ビルド
 RUN npm run build
+
+# 本番用に再インストール（devDependenciesを除外）
+RUN rm -rf node_modules && npm install --omit=dev
+
+# Prisma クライアント再生成（node_modules削除後）
+RUN npx prisma generate
 
 # データディレクトリ作成
 RUN mkdir -p /app/data
