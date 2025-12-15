@@ -16,13 +16,13 @@ export default function RootLayout() {
         <Stack.Screen
           name="index"
           options={{
-            title: 'Bingo App',
+            title: 'ビンゴゲーム',
           }}
         />
         <Stack.Screen
           name="game"
           options={{
-            title: 'Bingo Game',
+            title: 'ゲーム中',
             headerBackVisible: false,
           }}
         />

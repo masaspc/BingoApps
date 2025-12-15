@@ -80,28 +80,28 @@ export default function GameScreen() {
     const confirmBingo = () => declareBingo();
 
     if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you have BINGO?')) {
+      if (window.confirm('ビンゴを宣言しますか？')) {
         confirmBingo();
       }
     } else {
       Alert.alert(
-        'Declare BINGO!',
-        'Are you sure you have BINGO?',
+        'ビンゴ宣言',
+        'ビンゴを宣言しますか？',
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Yes, BINGO!', onPress: confirmBingo },
+          { text: 'キャンセル', style: 'cancel' },
+          { text: 'ビンゴ！', onPress: confirmBingo },
         ]
       );
     }
   };
 
   const handleShareRoom = async () => {
-    const message = `Join my Bingo game!\nRoom Code: ${roomId}`;
+    const message = `ビンゴゲームに参加しよう！\nルームコード: ${roomId}`;
 
     if (Platform.OS === 'web') {
       try {
         await navigator.clipboard.writeText(message);
-        window.alert('Room code copied to clipboard!');
+        window.alert('ルームコードをコピーしました！');
       } catch {
         window.alert(message);
       }
@@ -118,9 +118,9 @@ export default function GameScreen() {
     if (Platform.OS === 'web') {
       try {
         await navigator.clipboard.writeText(roomId!);
-        window.alert('Room code copied!');
+        window.alert('ルームコードをコピーしました！');
       } catch {
-        window.alert(`Room Code: ${roomId}`);
+        window.alert(`ルームコード: ${roomId}`);
       }
     }
   };
@@ -150,7 +150,7 @@ export default function GameScreen() {
                 ]}
               />
               <Text style={styles.statusText}>
-                {isConnected ? 'Connected' : 'Connecting...'}
+                {isConnected ? '接続中' : '接続しています...'}
               </Text>
             </View>
           </View>
@@ -158,9 +158,9 @@ export default function GameScreen() {
           {/* ルーム情報（ホストのみ） */}
           {isHost && (
             <View style={styles.roomInfoCard}>
-              <Text style={styles.cardTitle}>Room Info</Text>
+              <Text style={styles.cardTitle}>ルーム情報</Text>
               <View style={styles.roomCodeRow}>
-                <Text style={styles.roomCodeLabel}>Code:</Text>
+                <Text style={styles.roomCodeLabel}>コード:</Text>
                 <TouchableOpacity onPress={copyRoomCode} style={styles.roomCodeButton}>
                   <Text style={styles.roomCode}>{roomId}</Text>
                   <Ionicons name="copy-outline" size={16} color="#4A90D9" />
@@ -168,7 +168,7 @@ export default function GameScreen() {
               </View>
               <TouchableOpacity onPress={handleShareRoom} style={styles.shareButtonDesktop}>
                 <Ionicons name="share-outline" size={18} color="#fff" />
-                <Text style={styles.shareButtonTextDesktop}>Share Room</Text>
+                <Text style={styles.shareButtonTextDesktop}>共有する</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -183,7 +183,7 @@ export default function GameScreen() {
         <ScrollView style={styles.mainContent} contentContainerStyle={styles.mainContentInner}>
           {/* 現在の番号 */}
           <View style={styles.currentNumberSection}>
-            <Text style={styles.sectionTitleDesktop}>Current Number</Text>
+            <Text style={styles.sectionTitleDesktop}>現在の番号</Text>
             <NumberBall number={currentNumber} />
           </View>
 
@@ -195,14 +195,14 @@ export default function GameScreen() {
               disabled={!isConnected || room?.status === 'finished'}
             >
               <Ionicons name="dice" size={28} color="#fff" />
-              <Text style={styles.drawButtonTextDesktop}>Draw Number</Text>
+              <Text style={styles.drawButtonTextDesktop}>番号を抽選</Text>
             </TouchableOpacity>
           )}
 
           {/* 抽選履歴 */}
           <View style={styles.historySection}>
             <Text style={styles.sectionTitleDesktop}>
-              Drawn Numbers ({drawnNumbers.length}/75)
+              抽選済み ({drawnNumbers.length}/75)
             </Text>
             <View style={styles.historyGrid}>
               {drawnNumbers
@@ -217,14 +217,14 @@ export default function GameScreen() {
             </View>
             {drawnNumbers.length > 20 && (
               <Text style={styles.historyMore}>
-                +{drawnNumbers.length - 20} more numbers
+                他 {drawnNumbers.length - 20} 個の番号
               </Text>
             )}
           </View>
 
           {/* ビンゴカード */}
           <View style={styles.cardSectionDesktop}>
-            <Text style={styles.sectionTitleDesktop}>Your Card</Text>
+            <Text style={styles.sectionTitleDesktop}>あなたのカード</Text>
             <BingoCard
               card={card}
               drawnNumbers={drawnNumbers}
@@ -246,15 +246,15 @@ export default function GameScreen() {
         {showWinnerModal && winner && (
           <View style={styles.modalOverlay}>
             <View style={styles.modalContentDesktop}>
-              <Text style={styles.modalTitleDesktop}>BINGO!</Text>
+              <Text style={styles.modalTitleDesktop}>ビンゴ！</Text>
               <Ionicons name="trophy" size={100} color="#FFD700" />
               <Text style={styles.winnerNameDesktop}>{winner.name}</Text>
-              <Text style={styles.winnerText}>wins!</Text>
+              <Text style={styles.winnerText}>さんが優勝！</Text>
               <TouchableOpacity
                 style={styles.modalButtonDesktop}
                 onPress={() => setShowWinnerModal(false)}
               >
-                <Text style={styles.modalButtonText}>Close</Text>
+                <Text style={styles.modalButtonText}>閉じる</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -276,13 +276,13 @@ export default function GameScreen() {
             ]}
           />
           <Text style={styles.statusText}>
-            {isConnected ? 'Connected' : 'Connecting...'}
+            {isConnected ? '接続中' : '接続しています...'}
           </Text>
         </View>
         {isHost && (
           <TouchableOpacity onPress={handleShareRoom} style={styles.shareButton}>
             <Ionicons name="share-outline" size={20} color="#4A90D9" />
-            <Text style={styles.shareButtonText}>Share</Text>
+            <Text style={styles.shareButtonText}>共有</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -290,7 +290,7 @@ export default function GameScreen() {
       {/* ルーム情報 */}
       {isHost && (
         <TouchableOpacity style={styles.roomInfo} onPress={isWeb ? copyRoomCode : undefined}>
-          <Text style={styles.roomCodeLabel}>Room Code:</Text>
+          <Text style={styles.roomCodeLabel}>ルームコード:</Text>
           <Text style={styles.roomCodeMobile}>{roomId}</Text>
           {isWeb && <Ionicons name="copy-outline" size={16} color="#4A90D9" />}
         </TouchableOpacity>
@@ -298,7 +298,7 @@ export default function GameScreen() {
 
       {/* 現在の番号 */}
       <View style={styles.currentNumberSection}>
-        <Text style={styles.sectionTitle}>Current Number</Text>
+        <Text style={styles.sectionTitle}>現在の番号</Text>
         <NumberBall number={currentNumber} />
       </View>
 
@@ -310,14 +310,14 @@ export default function GameScreen() {
           disabled={!isConnected || room?.status === 'finished'}
         >
           <Ionicons name="dice" size={24} color="#fff" />
-          <Text style={styles.drawButtonText}>Draw Number</Text>
+          <Text style={styles.drawButtonText}>番号を抽選</Text>
         </TouchableOpacity>
       )}
 
       {/* 抽選履歴 */}
       <View style={styles.historySection}>
         <Text style={styles.sectionTitle}>
-          Drawn Numbers ({drawnNumbers.length}/75)
+          抽選済み ({drawnNumbers.length}/75)
         </Text>
         <ScrollView
           horizontal
@@ -337,7 +337,7 @@ export default function GameScreen() {
 
       {/* ビンゴカード */}
       <View style={styles.cardSection}>
-        <Text style={styles.sectionTitle}>Your Card</Text>
+        <Text style={styles.sectionTitle}>あなたのカード</Text>
         <BingoCard
           card={card}
           drawnNumbers={drawnNumbers}
@@ -351,7 +351,7 @@ export default function GameScreen() {
         onPress={handleDeclareBingo}
         disabled={!isConnected}
       >
-        <Text style={styles.bingoButtonText}>BINGO!</Text>
+        <Text style={styles.bingoButtonText}>ビンゴ！</Text>
       </TouchableOpacity>
 
       {/* 参加者リスト */}
@@ -363,15 +363,15 @@ export default function GameScreen() {
       {showWinnerModal && winner && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>BINGO!</Text>
+            <Text style={styles.modalTitle}>ビンゴ！</Text>
             <Ionicons name="trophy" size={80} color="#FFD700" />
             <Text style={styles.winnerName}>{winner.name}</Text>
-            <Text style={styles.winnerText}>wins!</Text>
+            <Text style={styles.winnerText}>さんが優勝！</Text>
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => setShowWinnerModal(false)}
             >
-              <Text style={styles.modalButtonText}>Close</Text>
+              <Text style={styles.modalButtonText}>閉じる</Text>
             </TouchableOpacity>
           </View>
         </View>

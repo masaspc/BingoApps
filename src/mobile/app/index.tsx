@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
   const handleCreateRoom = async () => {
     if (!roomName.trim() || !hostName.trim()) {
-      showAlert('Error', 'Please enter room name and your name');
+      showAlert('エラー', 'ルーム名とあなたの名前を入力してください');
       return;
     }
 
@@ -53,7 +53,7 @@ export default function HomeScreen() {
         },
       });
     } catch (error) {
-      showAlert('Error', 'Failed to create room. Please try again.');
+      showAlert('エラー', 'ルームの作成に失敗しました。もう一度お試しください。');
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +61,7 @@ export default function HomeScreen() {
 
   const handleJoinRoom = async () => {
     if (!roomCode.trim() || !playerName.trim()) {
-      showAlert('Error', 'Please enter room code and your name');
+      showAlert('エラー', 'ルームコードとあなたの名前を入力してください');
       return;
     }
 
@@ -77,7 +77,7 @@ export default function HomeScreen() {
         },
       });
     } catch (error) {
-      showAlert('Error', 'Failed to join room. Please check the room code.');
+      showAlert('エラー', 'ルームへの参加に失敗しました。ルームコードを確認してください。');
     } finally {
       setIsLoading(false);
     }
@@ -99,11 +99,11 @@ export default function HomeScreen() {
         <View style={cardStyle}>
           <View style={styles.logoContainer}>
             <Text style={[styles.logoText, isDesktop && styles.logoTextDesktop]}>
-              BINGO
+              ビンゴ
             </Text>
-            <Text style={styles.subtitleText}>Company Event Edition</Text>
+            <Text style={styles.subtitleText}>会社イベント用ビンゴゲーム</Text>
             {isWeb && (
-              <Text style={styles.webBadge}>Web Version</Text>
+              <Text style={styles.webBadge}>Web版</Text>
             )}
           </View>
 
@@ -113,7 +113,7 @@ export default function HomeScreen() {
               onPress={() => setMode('create')}
             >
               <Ionicons name="add-circle" size={24} color="#fff" />
-              <Text style={styles.buttonText}>Create Room</Text>
+              <Text style={styles.buttonText}>ルームを作成</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -121,7 +121,7 @@ export default function HomeScreen() {
               onPress={() => setMode('join')}
             >
               <Ionicons name="enter" size={24} color="#4A90D9" />
-              <Text style={styles.secondaryButtonText}>Join Room</Text>
+              <Text style={styles.secondaryButtonText}>ルームに参加</Text>
             </TouchableOpacity>
           </View>
 
@@ -129,7 +129,7 @@ export default function HomeScreen() {
             <View style={styles.webNote}>
               <Ionicons name="information-circle" size={16} color="#666" />
               <Text style={styles.webNoteText}>
-                Works on PC, tablet, and smartphone browsers
+                PC・タブレット・スマートフォンのブラウザで動作します
               </Text>
             </View>
           )}
@@ -151,18 +151,18 @@ export default function HomeScreen() {
               onPress={() => setMode('menu')}
             >
               <Ionicons name="arrow-back" size={24} color="#4A90D9" />
-              <Text style={styles.backButtonText}>Back</Text>
+              <Text style={styles.backButtonText}>戻る</Text>
             </TouchableOpacity>
 
             <Text style={[styles.formTitle, isDesktop && styles.formTitleDesktop]}>
-              Create a Room
+              ルームを作成
             </Text>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Room Name</Text>
+              <Text style={styles.label}>ルーム名</Text>
               <TextInput
                 style={[styles.input, isDesktop && styles.inputDesktop]}
-                placeholder="e.g., Year-End Party Bingo"
+                placeholder="例：忘年会ビンゴ大会"
                 value={roomName}
                 onChangeText={setRoomName}
                 autoCapitalize="words"
@@ -170,10 +170,10 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Your Name (Host)</Text>
+              <Text style={styles.label}>あなたの名前（司会者）</Text>
               <TextInput
                 style={[styles.input, isDesktop && styles.inputDesktop]}
-                placeholder="e.g., John"
+                placeholder="例：田中"
                 value={hostName}
                 onChangeText={setHostName}
                 autoCapitalize="words"
@@ -194,7 +194,7 @@ export default function HomeScreen() {
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={24} color="#fff" />
-                  <Text style={styles.buttonText}>Create</Text>
+                  <Text style={styles.buttonText}>作成する</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -216,18 +216,18 @@ export default function HomeScreen() {
             onPress={() => setMode('menu')}
           >
             <Ionicons name="arrow-back" size={24} color="#4A90D9" />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>戻る</Text>
           </TouchableOpacity>
 
           <Text style={[styles.formTitle, isDesktop && styles.formTitleDesktop]}>
-            Join a Room
+            ルームに参加
           </Text>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Room Code</Text>
+            <Text style={styles.label}>ルームコード</Text>
             <TextInput
               style={[styles.input, isDesktop && styles.inputDesktop]}
-              placeholder="Enter room code"
+              placeholder="ルームコードを入力"
               value={roomCode}
               onChangeText={setRoomCode}
               autoCapitalize="none"
@@ -235,10 +235,10 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Your Name</Text>
+            <Text style={styles.label}>あなたの名前</Text>
             <TextInput
               style={[styles.input, isDesktop && styles.inputDesktop]}
-              placeholder="e.g., Jane"
+              placeholder="例：佐藤"
               value={playerName}
               onChangeText={setPlayerName}
               autoCapitalize="words"
@@ -259,7 +259,7 @@ export default function HomeScreen() {
             ) : (
               <>
                 <Ionicons name="enter" size={24} color="#fff" />
-                <Text style={styles.buttonText}>Join</Text>
+                <Text style={styles.buttonText}>参加する</Text>
               </>
             )}
           </TouchableOpacity>

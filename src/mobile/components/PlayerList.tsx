@@ -22,12 +22,12 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
           />
           <Text style={[styles.playerName, isCurrentUser && styles.currentPlayerName]}>
             {item.name}
-            {isCurrentUser && ' (You)'}
+            {isCurrentUser && ' (あなた)'}
           </Text>
         </View>
         {item.isHost && (
           <View style={styles.hostBadge}>
-            <Text style={styles.hostBadgeText}>Host</Text>
+            <Text style={styles.hostBadgeText}>司会</Text>
           </View>
         )}
       </View>
@@ -38,7 +38,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="people" size={20} color="#333" />
-        <Text style={styles.headerText}>Players ({players.length})</Text>
+        <Text style={styles.headerText}>参加者 ({players.length}人)</Text>
       </View>
       <FlatList
         data={players}
