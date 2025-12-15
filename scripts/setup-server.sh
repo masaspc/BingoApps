@@ -4,16 +4,17 @@
 # ConoHa VPS (Ubuntu 22.04) 用
 #
 # 使い方:
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/BingoApps/main/scripts/setup-server.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/masaspc/BingoApps/main/scripts/setup-server.sh | bash
 #
 # または:
-#   wget -qO- https://raw.githubusercontent.com/YOUR_USERNAME/BingoApps/main/scripts/setup-server.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/masaspc/BingoApps/main/scripts/setup-server.sh | bash
 #
 
 set -e
 
 echo "============================================"
 echo "  Bingo App サーバーセットアップ"
+echo "  ドメイン: t-bingo.com"
 echo "============================================"
 echo ""
 
@@ -67,8 +68,7 @@ if [ -d "BingoApps" ]; then
     cd BingoApps
     git pull
 else
-    # TODO: 実際のリポジトリURLに変更してください
-    git clone https://github.com/YOUR_USERNAME/BingoApps.git
+    git clone https://github.com/masaspc/BingoApps.git
     cd BingoApps
 fi
 log_info "ダウンロード完了"
@@ -92,7 +92,8 @@ fi
 # Step 5: ファイアウォール設定
 log_info "Step 5/5: ファイアウォールを設定中..."
 ufw allow 22 > /dev/null 2>&1
-ufw allow 3000 > /dev/null 2>&1
+ufw allow 80 > /dev/null 2>&1
+ufw allow 443 > /dev/null 2>&1
 ufw --force enable > /dev/null 2>&1
 log_info "ファイアウォール設定完了"
 
@@ -108,13 +109,12 @@ SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 
 echo "サーバー情報:"
 echo "  IP アドレス: ${SERVER_IP}"
-echo "  アプリ URL:  http://${SERVER_IP}:3000"
-echo "  ヘルスチェック: http://${SERVER_IP}:3000/health"
+echo "  ドメイン: t-bingo.com"
 echo ""
 echo "次のステップ:"
-echo "  1. ブラウザで http://${SERVER_IP}:3000/health にアクセス"
-echo "  2. モバイルアプリの apiUrl を http://${SERVER_IP}:3000 に設定"
-echo "  3. アプリでルームを作成してテスト"
+echo "  1. DNSのAレコードを ${SERVER_IP} に設定"
+echo "  2. Nginx + SSL の設定（docs/deployment-conoha.md 参照）"
+echo "  3. https://t-bingo.com でアクセス確認"
 echo ""
 echo "管理コマンド:"
 echo "  ログ確認:   cd /opt/BingoApps && docker compose logs -f"

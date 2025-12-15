@@ -136,7 +136,7 @@ curl -fsSL https://get.docker.com | sh
 
 # アプリをダウンロード
 cd /opt
-git clone https://github.com/YOUR_USERNAME/BingoApps.git
+git clone https://github.com/masaspc/BingoApps.git
 cd BingoApps
 
 # アプリを起動
