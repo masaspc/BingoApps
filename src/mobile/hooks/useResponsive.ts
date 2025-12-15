@@ -19,18 +19,43 @@ const getDeviceType = (width: number): DeviceType => {
   return 'desktop';
 };
 
-export function useResponsive(): ResponsiveInfo {
-  const [dimensions, setDimensions] = useState(() => {
+// SSR セーフな初期値
+const getInitialDimensions = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+  try {
     const { width, height } = Dimensions.get('window');
-    return { width, height };
-  });
+    return { width: width || 375, height: height || 667 };
+  } catch {
+    return { width: 375, height: 667 };
+  }
+};
+
+export function useResponsive(): ResponsiveInfo {
+  const [dimensions, setDimensions] = useState({ width: 375, height: 667 });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    setDimensions(getInitialDimensions());
+
+    const handleResize = () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+      }
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setDimensions({ width: window.width, height: window.height });
     });
 
-    return () => subscription.remove();
+    return () => subscription?.remove();
   }, []);
 
   const deviceType = getDeviceType(dimensions.width);
