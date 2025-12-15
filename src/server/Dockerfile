@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# Prisma に必要な OpenSSL ライブラリをインストール
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # 依存関係ファイルをコピー（コンテキストは ./src）
