@@ -19,16 +19,6 @@ services:
       retries: 3
       start_period: 10s
 
-  web:
-    build:
-      context: ./src/mobile
-      dockerfile: Dockerfile
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-    depends_on:
-      - server
-
 volumes:
   bingo-data:
     driver: local

@@ -23,12 +23,6 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="join"
-          options={{
-            title: 'Join Room',
-          }}
-        />
-        <Stack.Screen
           name="game"
           options={{
             title: 'Bingo Game',
