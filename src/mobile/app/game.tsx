@@ -57,6 +57,30 @@ export default function GameScreen() {
     onBingoWinner: handleBingoWinner,
   });
 
+  // 抽選された番号を自動的にマークする
+  React.useEffect(() => {
+    if (drawnNumbers.length === 0) return;
+
+    const numbersToMark: number[] = [];
+    const newMarked = card.marked.map((row, rowIndex) =>
+      row.map((isMarked, colIndex) => {
+        const number = card.numbers[rowIndex][colIndex];
+        if (number !== 0 && drawnNumbers.includes(number) && !isMarked) {
+          numbersToMark.push(number);
+          return true;
+        }
+        return isMarked;
+      })
+    );
+
+    if (numbersToMark.length > 0) {
+      setCard(prev => ({ ...prev, marked: newMarked }));
+      // サーバーにもマークを送信
+      numbersToMark.forEach(num => markNumber(num));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawnNumbers, card.numbers, markNumber]);
+
   const handleMarkNumber = (number: number) => {
     const newMarked = card.marked.map((row, rowIndex) =>
       row.map((marked, colIndex) => {
