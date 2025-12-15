@@ -2,14 +2,17 @@
 
 ビンゴ大会で使用する際の、ConoHa VPS セットアップから終了までの完全ガイドです。
 
+**ドメイン: t-bingo.com**
+
 ## 目次
 
 1. [事前準備（大会1週間前）](#1-事前準備大会1週間前)
 2. [サーバー作成（大会前日〜当日朝）](#2-サーバー作成大会前日当日朝)
 3. [アプリのデプロイ（約15分）](#3-アプリのデプロイ約15分)
-4. [動作確認](#4-動作確認)
-5. [大会当日の運用](#5-大会当日の運用)
-6. [大会終了後（サーバー削除）](#6-大会終了後サーバー削除)
+4. [ドメイン・SSL設定](#4-ドメインssl設定)
+5. [動作確認](#5-動作確認)
+6. [大会当日の運用](#6-大会当日の運用)
+7. [大会終了後（サーバー削除）](#7-大会終了後サーバー削除)
 
 ---
 
@@ -66,6 +69,10 @@ cat ~/.ssh/id_ed25519.pub
 4. 「SSH Key を登録」を選択
 5. 公開鍵を貼り付けて保存
 
+### 1.4 ドメイン設定の準備
+
+ドメイン `t-bingo.com` のDNS設定画面を開けるようにしておく。
+
 ---
 
 ## 2. サーバー作成（大会前日〜当日朝）
@@ -89,11 +96,17 @@ cat ~/.ssh/id_ed25519.pub
 4. 「追加」をクリック
 5. サーバーが「起動中」になるまで待つ（1〜2分）
 
-### 2.2 IPアドレスを確認
+### 2.2 IPアドレスを確認・DNS設定
 
-サーバー一覧で作成したサーバーをクリックし、**IPアドレス**をメモ。
+1. サーバー一覧で作成したサーバーをクリックし、**IPアドレス**をメモ
+2. ドメインのDNS設定画面で以下を設定：
 
-例: `123.456.789.012`
+| タイプ | ホスト | 値 |
+|-------|-------|-----|
+| A | @ | （サーバーのIPアドレス） |
+| A | www | （サーバーのIPアドレス） |
+
+**注意**: DNS反映には数分〜数時間かかる場合があります。
 
 ---
 
@@ -101,16 +114,8 @@ cat ~/.ssh/id_ed25519.pub
 
 ### 3.1 サーバーに接続
 
-#### Windows（PowerShell）
-
-```powershell
-ssh root@123.456.789.012
-```
-
-#### Mac/Linux
-
 ```bash
-ssh root@123.456.789.012
+ssh root@（IPアドレス）
 ```
 
 初回接続時に「Are you sure...」と聞かれたら `yes` を入力。
@@ -122,6 +127,9 @@ ssh root@123.456.789.012
 ```bash
 # システム更新
 apt update && apt upgrade -y
+
+# 必要なパッケージをインストール
+apt install -y curl git nginx certbot python3-certbot-nginx
 
 # Docker インストール
 curl -fsSL https://get.docker.com | sh
@@ -135,7 +143,7 @@ cd BingoApps
 docker compose up -d --build
 
 # 起動確認（少し待ってから実行）
-sleep 10
+sleep 15
 docker compose ps
 curl http://localhost:3000/health
 ```
@@ -144,110 +152,145 @@ curl http://localhost:3000/health
 
 ```bash
 # ファイアウォールを有効化
-ufw allow 22
-ufw allow 3000
+ufw allow 22    # SSH
+ufw allow 80    # HTTP
+ufw allow 443   # HTTPS
 ufw --force enable
 
 # 確認
 ufw status
 ```
 
-### 3.4 動作確認
+---
+
+## 4. ドメイン・SSL設定
+
+### 4.1 Nginx 設定
+
+```bash
+# 設定ファイルをコピー
+cp /opt/BingoApps/nginx/t-bingo.com.conf /etc/nginx/sites-available/t-bingo.com
+
+# 一時的にHTTPのみの設定を作成（SSL取得前）
+cat > /etc/nginx/sites-available/t-bingo.com << 'EOF'
+server {
+    listen 80;
+    server_name t-bingo.com www.t-bingo.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+
+# 有効化
+ln -sf /etc/nginx/sites-available/t-bingo.com /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+
+# 設定テスト
+nginx -t
+
+# Nginx 再起動
+systemctl restart nginx
+```
+
+### 4.2 SSL 証明書取得（Let's Encrypt）
+
+```bash
+# SSL証明書を取得
+certbot --nginx -d t-bingo.com -d www.t-bingo.com --non-interactive --agree-tos -m your-email@example.com
+
+# 自動更新の確認
+certbot renew --dry-run
+```
+
+### 4.3 最終的な Nginx 設定
+
+certbot が自動でSSL設定を追加します。確認：
+
+```bash
+# 設定確認
+cat /etc/nginx/sites-available/t-bingo.com
+
+# Nginx 再起動
+systemctl restart nginx
+```
+
+---
+
+## 5. 動作確認
+
+### 5.1 ヘルスチェック
 
 ブラウザで以下にアクセス：
 
-```
-http://123.456.789.012:3000/health
-```
+- `https://t-bingo.com/health`
 
 `{"status":"ok",...}` と表示されれば成功！
 
----
+### 5.2 Web版テスト
 
-## 4. 動作確認
-
-### 4.1 モバイルアプリの設定
-
-アプリのサーバーURLを設定する必要があります。
-
-#### 開発用（Expo Go で確認する場合）
-
-`src/mobile/app.json` を編集：
-
-```json
-{
-  "expo": {
-    "extra": {
-      "apiUrl": "http://123.456.789.012:3000"
-    }
-  }
-}
-```
-
-その後、開発PCで：
-
-```bash
-cd src/mobile
-npm install
-npx expo start
-```
-
-スマホの Expo Go アプリでQRコードをスキャン。
-
-#### 本番用（APKビルド）
-
-`src/mobile/app.json` のURLを本番サーバーに設定してからビルド：
-
-```bash
-npx eas build --platform android --profile preview
-```
-
-### 4.2 テストプレイ
-
-1. アプリを起動
+1. PC のブラウザで `https://t-bingo.com` にアクセス
 2. 「Create Room」でルームを作成
-3. 別のスマホから「Join Room」で参加
-4. 抽選が動作するか確認
+3. スマホのブラウザで `https://t-bingo.com` にアクセス
+4. 「Join Room」でルームに参加
 
 ---
 
-## 5. 大会当日の運用
+## 6. 大会当日の運用
 
-### 5.1 事前チェックリスト
+### 6.1 事前チェックリスト
 
 | チェック | 項目 |
 |---------|------|
 | [ ] | サーバーが起動している |
-| [ ] | http://IPアドレス:3000/health にアクセスできる |
-| [ ] | 管理者のスマホでルームを作成できる |
+| [ ] | https://t-bingo.com/health にアクセスできる |
+| [ ] | 管理者PCでルームを作成できる |
 | [ ] | 参加者用のルームコードを準備 |
 | [ ] | Wi-Fi環境が安定している |
 
-### 5.2 参加者への案内
+### 6.2 参加者への案内
 
 ```
 【ビンゴ大会 参加方法】
 
-1. スマホに「Expo Go」アプリをインストール
-   - iPhone: App Store で「Expo Go」を検索
-   - Android: Google Play で「Expo Go」を検索
+1. スマホまたはPCのブラウザで以下にアクセス
 
-2. 以下のQRコードをスキャン
-   （QRコードを表示）
+   https://t-bingo.com
 
-3. アプリが開いたら「Join Room」をタップ
+2. 「Join Room」をタップ/クリック
 
-4. ルームコード: XXXXXX
+3. ルームコード: XXXXXX
    名前を入力して参加！
+
+※ アプリのインストールは不要です
 ```
 
-### 5.3 トラブルシューティング
+### 6.3 QRコード用URL
+
+```
+https://t-bingo.com
+```
+
+このURLのQRコードを作成して会場に表示すると便利です。
+
+### 6.4 トラブルシューティング
 
 #### アプリが接続できない
 
 ```bash
 # サーバーにSSH接続して確認
-ssh root@123.456.789.012
+ssh root@（IPアドレス）
 
 # コンテナの状態確認
 docker compose ps
@@ -257,21 +300,25 @@ docker compose logs -f
 
 # 再起動
 docker compose restart
+
+# Nginx 確認
+systemctl status nginx
+nginx -t
 ```
 
 #### 参加者が入れない
 
-- Wi-Fiが同じネットワークか確認
+- https://t-bingo.com にアクセスできるか確認
 - ルームコードが正しいか確認
-- サーバーのファイアウォールを確認
+- 別のブラウザで試す
 
 ---
 
-## 6. 大会終了後（サーバー削除）
+## 7. 大会終了後（サーバー削除）
 
 **重要: サーバーを削除しないと課金が続きます！**
 
-### 6.1 サーバーを削除
+### 7.1 サーバーを削除
 
 1. ConoHa コントロールパネルにログイン
 2. 左メニュー「サーバー」
@@ -279,7 +326,11 @@ docker compose restart
 4. 右上の「サーバー削除」をクリック
 5. 確認画面で「はい」をクリック
 
-### 6.2 削除確認
+### 7.2 DNS設定を元に戻す（任意）
+
+次回使用するまでDNSのAレコードを削除しておくこともできます。
+
+### 7.3 削除確認
 
 - サーバー一覧から消えていることを確認
 - 翌日、ConoHaから課金メールが来ていないか確認
@@ -292,28 +343,32 @@ docker compose restart
 
 ```bash
 # サーバー接続
-ssh root@YOUR_IP
+ssh root@（IPアドレス）
 
 # アプリ起動
 cd /opt/BingoApps && docker compose up -d
 
 # アプリ停止
-docker compose down
+cd /opt/BingoApps && docker compose down
 
 # ログ確認
-docker compose logs -f
+cd /opt/BingoApps && docker compose logs -f
 
 # 再起動
-docker compose restart
+cd /opt/BingoApps && docker compose restart
+
+# Nginx 再起動
+systemctl restart nginx
 
 # ヘルスチェック
-curl http://localhost:3000/health
+curl https://t-bingo.com/health
 ```
 
 ### 重要な情報（メモしておく）
 
 | 項目 | 値 |
 |-----|---|
+| ドメイン | t-bingo.com |
 | ConoHa ログインID | |
 | ConoHa パスワード | |
 | サーバー IP アドレス | |
@@ -328,4 +383,5 @@ curl http://localhost:3000/health
 1. このドキュメントを保存しておく
 2. SSH キーは削除せず保管
 3. アプリのコードは GitHub に保存済み
-4. 次回は「2. サーバー作成」から開始すればOK
+4. 次回は「2. サーバー作成」から開始
+5. DNSのAレコードを新しいIPアドレスに更新

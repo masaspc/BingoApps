@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Bingo App",
-    "slug": "bingo-app",
+    "name": "T-Bingo",
+    "slug": "t-bingo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "bingo",
+    "scheme": "t-bingo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.bingoapp"
+      "bundleIdentifier": "com.tbingo.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4A90D9"
       },
-      "package": "com.yourcompany.bingoapp"
+      "package": "com.tbingo.app"
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +36,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://localhost:3000"
+      "apiUrl": "https://t-bingo.com"
     }
   }
 }
