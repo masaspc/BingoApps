@@ -8,8 +8,9 @@ import {
   ScrollView,
   Share,
   Platform,
+  Image,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BingoCard } from '../components/BingoCard';
 import { NumberBall } from '../components/NumberBall';
@@ -18,6 +19,11 @@ import { useSocket } from '../hooks/useSocket';
 import { useResponsive } from '../hooks/useResponsive';
 import type { BingoCard as BingoCardType, Player } from '../types';
 
+// QRコードを生成するURL（Google Chart APIを使用）
+const generateQRCodeUrl = (data: string, size: number = 150) => {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+};
+
 export default function GameScreen() {
   const params = useLocalSearchParams<{
     roomId: string;
@@ -25,6 +31,7 @@ export default function GameScreen() {
     hostPin?: string;
     cardData: string;
   }>();
+  const router = useRouter();
 
   const { roomId, playerId, hostPin } = params;
   const initialCard: BingoCardType = JSON.parse(params.cardData);
@@ -33,13 +40,32 @@ export default function GameScreen() {
   const [card, setCard] = useState<BingoCardType>(initialCard);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
+  const [winnerRank, setWinnerRank] = useState<number>(1);
 
   const isHost = !!hostPin;
 
-  const handleBingoWinner = useCallback((winnerPlayer: Player, winnerCard: BingoCardType) => {
-    setWinner(winnerPlayer);
-    setShowWinnerModal(true);
-  }, []);
+  // 自分がビンゴした時のみモーダルを表示
+  const handleBingoWinner = useCallback((winnerPlayer: Player, winnerCard: BingoCardType, rank: number) => {
+    // 自分がビンゴした場合のみモーダルを表示
+    if (winnerPlayer.id === playerId) {
+      setWinner(winnerPlayer);
+      setWinnerRank(rank);
+      setShowWinnerModal(true);
+    }
+  }, [playerId]);
+
+  // トップに戻る
+  const handleBackToHome = () => {
+    router.replace('/');
+  };
+
+  // 参加用のURL
+  const getJoinUrl = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return `${window.location.origin}?roomId=${roomId}`;
+    }
+    return `https://t-bingo.com?roomId=${roomId}`;
+  };
 
   const {
     room,
@@ -175,11 +201,18 @@ export default function GameScreen() {
           {isHost && (
             <View style={styles.roomInfoCard}>
               <Text style={styles.cardTitle}>ルーム情報</Text>
+              <View style={styles.qrCodeContainer}>
+                <Image
+                  source={{ uri: generateQRCodeUrl(getJoinUrl(), 120) }}
+                  style={styles.qrCode}
+                />
+              </View>
+              <Text style={styles.qrCodeHint}>QRコードをスキャンして参加</Text>
               <View style={styles.roomCodeRow}>
                 <Text style={styles.roomCodeLabel}>コード:</Text>
                 <TouchableOpacity onPress={copyRoomCode} style={styles.roomCodeButton}>
-                  <Text style={styles.roomCode}>{roomId}</Text>
-                  <Ionicons name="copy-outline" size={16} color="#4A90D9" />
+                  <Text style={styles.roomCodeValue}>{roomId}</Text>
+                  <Ionicons name="copy-outline" size={14} color="#4A90D9" />
                 </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={handleShareRoom} style={styles.shareButtonDesktop}>
@@ -256,16 +289,28 @@ export default function GameScreen() {
           >
             <Text style={styles.bingoButtonTextDesktop}>BINGO!</Text>
           </TouchableOpacity>
+
+          {/* トップに戻るボタン */}
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={handleBackToHome}
+          >
+            <Ionicons name="home-outline" size={20} color="#666" />
+            <Text style={styles.backToHomeText}>トップに戻る</Text>
+          </TouchableOpacity>
         </ScrollView>
 
-        {/* 当選者モーダル */}
+        {/* 当選者モーダル（自分がビンゴした時のみ表示） */}
         {showWinnerModal && winner && (
           <View style={styles.modalOverlay}>
             <View style={styles.modalContentDesktop}>
               <Text style={styles.modalTitleDesktop}>ビンゴ！</Text>
-              <Ionicons name="trophy" size={100} color="#FFD700" />
+              <View style={styles.rankBadgeLarge}>
+                <Text style={styles.rankBadgeLargeText}>{winnerRank}</Text>
+              </View>
+              <Ionicons name="trophy" size={80} color="#FFD700" />
               <Text style={styles.winnerNameDesktop}>{winner.name}</Text>
-              <Text style={styles.winnerText}>さんが優勝！</Text>
+              <Text style={styles.winnerText}>{winnerRank}位でビンゴ達成！</Text>
               <TouchableOpacity
                 style={styles.modalButtonDesktop}
                 onPress={() => setShowWinnerModal(false)}
@@ -391,14 +436,26 @@ export default function GameScreen() {
         <PlayerList players={players} currentPlayerId={playerId} />
       </View>
 
-      {/* 当選者モーダル */}
+      {/* トップに戻るボタン */}
+      <TouchableOpacity
+        style={styles.backToHomeButtonMobile}
+        onPress={handleBackToHome}
+      >
+        <Ionicons name="home-outline" size={18} color="#666" />
+        <Text style={styles.backToHomeText}>トップに戻る</Text>
+      </TouchableOpacity>
+
+      {/* 当選者モーダル（自分がビンゴした時のみ表示） */}
       {showWinnerModal && winner && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>ビンゴ！</Text>
-            <Ionicons name="trophy" size={80} color="#FFD700" />
+            <View style={styles.rankBadgeLargeMobile}>
+              <Text style={styles.rankBadgeLargeMobileText}>{winnerRank}</Text>
+            </View>
+            <Ionicons name="trophy" size={60} color="#FFD700" />
             <Text style={styles.winnerName}>{winner.name}</Text>
-            <Text style={styles.winnerText}>さんが優勝！</Text>
+            <Text style={styles.winnerText}>{winnerRank}位でビンゴ達成！</Text>
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => setShowWinnerModal(false)}
@@ -792,5 +849,84 @@ const styles = StyleSheet.create({
     marginTop: 24,
     // @ts-ignore
     cursor: 'pointer',
+  },
+
+  // QRコード関連
+  qrCodeContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  qrCode: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+  },
+  qrCodeHint: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  roomCodeValue: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'monospace',
+    marginRight: 4,
+  },
+
+  // トップに戻るボタン
+  backToHomeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    gap: 8,
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  backToHomeButtonMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    marginBottom: 20,
+    gap: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  backToHomeText: {
+    fontSize: 14,
+    color: '#666',
+  },
+
+  // ランクバッジ（大）
+  rankBadgeLarge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  rankBadgeLargeText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  rankBadgeLargeMobile: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  rankBadgeLargeMobileText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

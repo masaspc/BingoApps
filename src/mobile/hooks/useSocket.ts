@@ -8,12 +8,13 @@ import type {
   NumberDrawnPayload,
   PlayerJoinedPayload,
   BingoWinnerPayload,
+  PlayersUpdatedPayload,
 } from '../types';
 
 interface UseSocketOptions {
   roomId: string;
   playerId: string;
-  onBingoWinner?: (player: Player, card: BingoCard) => void;
+  onBingoWinner?: (player: Player, card: BingoCard, rank: number) => void;
 }
 
 interface UseSocketReturn {
@@ -70,7 +71,10 @@ export function useSocket({
         setPlayers(prev => [...prev, payload.player]);
       },
       onBingoWinner: (payload: BingoWinnerPayload) => {
-        onBingoWinner?.(payload.player, payload.card);
+        onBingoWinner?.(payload.player, payload.card, payload.rank);
+      },
+      onPlayersUpdated: (payload: PlayersUpdatedPayload) => {
+        setPlayers(payload.players);
       },
       onError: (err) => {
         setError(err.message);

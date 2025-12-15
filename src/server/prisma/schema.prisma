@@ -29,10 +29,11 @@ model Player {
 }
 
 model BingoCard {
-  id       String  @id @default(uuid())
-  playerId String  @unique
-  player   Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  numbers  String  // JSON: 5x5 array
-  marked   String  @default("[]") // JSON: marked positions
-  hasBingo Boolean @default(false)
+  id        String  @id @default(uuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  numbers   String  // JSON: 5x5 array
+  marked    String  @default("[]") // JSON: marked positions
+  hasBingo  Boolean @default(false)
+  bingoRank Int?    // ビンゴ達成順位
 }

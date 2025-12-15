@@ -30,9 +30,9 @@ export function initializeSocket(httpServer: HttpServer): Server {
         // Socket.ioのルームに参加
         socket.join(roomId);
 
-        // 現在のルーム状態を送信
+        // 現在のルーム状態を送信（ランク付きプレイヤー一覧）
         const room = await roomService.getRoom(roomId);
-        const players = await roomService.getPlayers(roomId);
+        const players = await roomService.getPlayersWithRanks(roomId);
 
         if (room) {
           socket.emit(SOCKET_EVENTS.ROOM_STATE, { room, players });
@@ -103,11 +103,16 @@ export function initializeSocket(httpServer: HttpServer): Server {
 
         const result = await roomService.declareBingo(playerId);
         if (result && result.valid) {
-          // ビンゴ当選者を全員に通知
+          // ビンゴ当選者を全員に通知（ランク付き）
           io.to(roomId).emit(SOCKET_EVENTS.BINGO_WINNER, {
             player: result.player,
             card: result.card,
+            rank: result.rank || 1,
           });
+
+          // 更新されたプレイヤー一覧（ランク付き）を全員に送信
+          const players = await roomService.getPlayersWithRanks(roomId);
+          io.to(roomId).emit(SOCKET_EVENTS.PLAYERS_UPDATED, { players });
         } else {
           socket.emit(SOCKET_EVENTS.ERROR, { message: 'まだビンゴではありません。縦・横・斜めのいずれかが揃うとビンゴです。' });
         }

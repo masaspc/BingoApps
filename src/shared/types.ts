@@ -29,6 +29,7 @@ export interface BingoCard {
   numbers: number[][]; // 5x5 配列
   marked: boolean[][]; // 5x5 配列
   hasBingo: boolean;
+  bingoRank?: number; // ビンゴ達成順位
 }
 
 // ルーム作成リクエスト
@@ -105,6 +106,12 @@ export interface PlayerMarkedPayload {
 export interface BingoWinnerPayload {
   player: Player;
   card: BingoCard;
+  rank: number; // ビンゴ達成順位
+}
+
+// プレイヤー更新ペイロード（ランク付き）
+export interface PlayersUpdatedPayload {
+  players: Array<Player & { bingoRank?: number }>;
 }
 
 // Socket.io イベント名
@@ -121,6 +128,7 @@ export const SOCKET_EVENTS = {
   PLAYER_JOINED: 'player-joined',
   PLAYER_MARKED: 'player-marked',
   BINGO_WINNER: 'bingo-winner',
+  PLAYERS_UPDATED: 'players-updated',
   ERROR: 'error',
 } as const;
 

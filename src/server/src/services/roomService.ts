@@ -46,6 +46,7 @@ function toBingoCard(dbCard: {
   numbers: string;
   marked: string;
   hasBingo: boolean;
+  bingoRank: number | null;
 }): BingoCard {
   return {
     id: dbCard.id,
@@ -53,6 +54,7 @@ function toBingoCard(dbCard: {
     numbers: JSON.parse(dbCard.numbers),
     marked: JSON.parse(dbCard.marked),
     hasBingo: dbCard.hasBingo,
+    bingoRank: dbCard.bingoRank ?? undefined,
   };
 }
 
@@ -178,6 +180,21 @@ export const roomService = {
   },
 
   /**
+   * ルームの参加者一覧をビンゴランク付きで取得
+   */
+  async getPlayersWithRanks(roomId: string): Promise<Array<Player & { bingoRank?: number }>> {
+    const dbPlayers = await prisma.player.findMany({
+      where: { roomId },
+      include: { card: true },
+    });
+
+    return dbPlayers.map(p => ({
+      ...toPlayer(p),
+      bingoRank: p.card?.bingoRank ?? undefined,
+    }));
+  },
+
+  /**
    * ホストPINを検証
    */
   async verifyHostPin(roomId: string, pin: string): Promise<boolean> {
@@ -285,7 +302,7 @@ export const roomService = {
   /**
    * ビンゴを宣言
    */
-  async declareBingo(playerId: string): Promise<{ valid: boolean; card: BingoCard; player: Player } | null> {
+  async declareBingo(playerId: string): Promise<{ valid: boolean; card: BingoCard; player: Player; rank?: number } | null> {
     const dbCard = await prisma.bingoCard.findUnique({
       where: { playerId },
       include: { player: { include: { room: true } } },
@@ -293,6 +310,16 @@ export const roomService = {
 
     if (!dbCard) {
       return null;
+    }
+
+    // 既にビンゴ達成済みの場合
+    if (dbCard.hasBingo) {
+      return {
+        valid: true,
+        card: toBingoCard(dbCard),
+        player: toPlayer(dbCard.player),
+        rank: dbCard.bingoRank ?? undefined,
+      };
     }
 
     const player = toPlayer(dbCard.player);
@@ -320,22 +347,34 @@ export const roomService = {
     const { checkBingo } = await import('../utils/random.js');
     const valid = checkBingo(marked);
 
+    let rank: number | undefined;
+
+    if (valid) {
+      // 現在のルームで何人がビンゴを達成しているかカウント
+      const existingWinners = await prisma.bingoCard.count({
+        where: {
+          player: { roomId: dbCard.player.roomId },
+          hasBingo: true,
+        },
+      });
+      rank = existingWinners + 1;
+
+      await prisma.bingoCard.update({
+        where: { playerId },
+        data: { hasBingo: true, bingoRank: rank },
+      });
+    }
+
     const card: BingoCard = {
       id: dbCard.id,
       playerId: dbCard.playerId,
       numbers,
       marked,
       hasBingo: valid,
+      bingoRank: rank,
     };
 
-    if (valid) {
-      await prisma.bingoCard.update({
-        where: { playerId },
-        data: { hasBingo: true },
-      });
-    }
-
-    return { valid, card, player };
+    return { valid, card, player, rank };
   },
 
   /**

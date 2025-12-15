@@ -11,6 +11,7 @@ import {
   type PlayerJoinedPayload,
   type PlayerMarkedPayload,
   type BingoWinnerPayload,
+  type PlayersUpdatedPayload,
 } from '../types';
 
 // API URL を取得（Web は現在のオリジン、それ以外は設定値）
@@ -30,6 +31,7 @@ type SocketEventHandlers = {
   onPlayerJoined?: (payload: PlayerJoinedPayload) => void;
   onPlayerMarked?: (payload: PlayerMarkedPayload) => void;
   onBingoWinner?: (payload: BingoWinnerPayload) => void;
+  onPlayersUpdated?: (payload: PlayersUpdatedPayload) => void;
   onError?: (error: { message: string }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
@@ -89,6 +91,10 @@ class SocketService {
 
     this.socket.on(SOCKET_EVENTS.BINGO_WINNER, (payload: BingoWinnerPayload) => {
       this.handlers.onBingoWinner?.(payload);
+    });
+
+    this.socket.on(SOCKET_EVENTS.PLAYERS_UPDATED, (payload: PlayersUpdatedPayload) => {
+      this.handlers.onPlayersUpdated?.(payload);
     });
 
     this.socket.on(SOCKET_EVENTS.ERROR, (error: { message: string }) => {
