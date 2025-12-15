@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import type {
   CreateRoomRequest,
   CreateRoomResponse,
@@ -9,12 +8,13 @@ import type {
   Player,
 } from '../types';
 
-// Web の場合は現在のオリジンを使用、それ以外は設定値を使用
-const getApiUrl = () => {
+// API URL を取得（Web は現在のオリジン、それ以外は設定値）
+const getApiUrl = (): string => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+  // モバイルアプリ用: 本番環境のURL
+  return 'https://t-bingo.com';
 };
 
 const API_URL = getApiUrl();
