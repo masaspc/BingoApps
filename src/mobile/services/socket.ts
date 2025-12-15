@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import {
   SOCKET_EVENTS,
@@ -13,7 +14,15 @@ import {
   type BingoWinnerPayload,
 } from '../types';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+// Web の場合は現在のオリジンを使用、それ以外は設定値を使用
+const getApiUrl = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+};
+
+const API_URL = getApiUrl();
 
 type SocketEventHandlers = {
   onRoomState?: (payload: RoomStatePayload) => void;
