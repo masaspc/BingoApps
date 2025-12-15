@@ -8,7 +8,7 @@
 
 1. [事前準備（大会1週間前）](#1-事前準備大会1週間前)
 2. [サーバー作成（大会前日〜当日朝）](#2-サーバー作成大会前日当日朝)
-3. [アプリのデプロイ（約15分）](#3-アプリのデプロイ約15分)
+3. [アプリのデプロイ（約20分）](#3-アプリのデプロイ約20分)
 4. [ドメイン・SSL設定](#4-ドメインssl設定)
 5. [動作確認](#5-動作確認)
 6. [大会当日の運用](#6-大会当日の運用)
@@ -110,7 +110,7 @@ cat ~/.ssh/id_ed25519.pub
 
 ---
 
-## 3. アプリのデプロイ（約15分）
+## 3. アプリのデプロイ（約20分）
 
 ### 3.1 サーバーに接続
 
@@ -120,9 +120,7 @@ ssh root@（IPアドレス）
 
 初回接続時に「Are you sure...」と聞かれたら `yes` を入力。
 
-### 3.2 自動セットアップスクリプトを実行
-
-以下のコマンドを**1行ずつ**コピーして実行：
+### 3.2 システム更新と必要パッケージのインストール
 
 ```bash
 # システム更新
@@ -133,22 +131,43 @@ apt install -y curl git nginx certbot python3-certbot-nginx
 
 # Docker インストール
 curl -fsSL https://get.docker.com | sh
+```
 
-# アプリをダウンロード
+### 3.3 アプリをダウンロード
+
+```bash
 cd /opt
 git clone https://github.com/masaspc/BingoApps.git
 cd BingoApps
+```
 
-# アプリを起動
+### 3.4 アプリをビルド・起動
+
+```bash
+# アプリをビルド・起動（初回は5〜10分かかります）
 docker compose up -d --build
+```
 
-# 起動確認（少し待ってから実行）
-sleep 15
+**注意**: 初回ビルドは npm パッケージのダウンロードなどで時間がかかります。
+途中でエラーが出なければ、完了まで待ってください。
+
+### 3.5 起動確認
+
+```bash
+# コンテナの状態を確認
 docker compose ps
+```
+
+「STATUS」が「Up」になっていれば成功です。
+
+```bash
+# ヘルスチェック
 curl http://localhost:3000/health
 ```
 
-### 3.3 ファイアウォール設定
+`{"status":"ok",...}` と表示されればOK！
+
+### 3.6 ファイアウォール設定
 
 ```bash
 # ファイアウォールを有効化
@@ -168,9 +187,6 @@ ufw status
 ### 4.1 Nginx 設定
 
 ```bash
-# 設定ファイルをコピー
-cp /opt/BingoApps/nginx/t-bingo.com.conf /etc/nginx/sites-available/t-bingo.com
-
 # 一時的にHTTPのみの設定を作成（SSL取得前）
 cat > /etc/nginx/sites-available/t-bingo.com << 'EOF'
 server {
@@ -206,17 +222,23 @@ systemctl restart nginx
 
 ### 4.2 SSL 証明書取得（Let's Encrypt）
 
-```bash
-# SSL証明書を取得
-certbot --nginx -d t-bingo.com -d www.t-bingo.com --non-interactive --agree-tos -m your-email@example.com
+**注意**: この手順の前にDNSが反映されている必要があります。
 
+```bash
+# SSL証明書を取得（メールアドレスは自分のものに変更）
+certbot --nginx -d t-bingo.com -d www.t-bingo.com --non-interactive --agree-tos -m your-email@example.com
+```
+
+エラーが出た場合は、DNSの反映を待ってから再実行してください。
+
+```bash
 # 自動更新の確認
 certbot renew --dry-run
 ```
 
-### 4.3 最終的な Nginx 設定
+### 4.3 最終的な Nginx 設定確認
 
-certbot が自動でSSL設定を追加します。確認：
+certbot が自動でSSL設定を追加します。
 
 ```bash
 # 設定確認
@@ -234,7 +256,9 @@ systemctl restart nginx
 
 ブラウザで以下にアクセス：
 
-- `https://t-bingo.com/health`
+```
+https://t-bingo.com/health
+```
 
 `{"status":"ok",...}` と表示されれば成功！
 
@@ -293,6 +317,7 @@ https://t-bingo.com
 ssh root@（IPアドレス）
 
 # コンテナの状態確認
+cd /opt/BingoApps
 docker compose ps
 
 # ログ確認
@@ -306,11 +331,32 @@ systemctl status nginx
 nginx -t
 ```
 
+#### コンテナが起動していない場合
+
+```bash
+# 再ビルド
+cd /opt/BingoApps
+docker compose down
+docker compose up -d --build
+
+# ログを確認
+docker compose logs -f
+```
+
 #### 参加者が入れない
 
 - https://t-bingo.com にアクセスできるか確認
 - ルームコードが正しいか確認
 - 別のブラウザで試す
+
+#### 最新のコードに更新したい場合
+
+```bash
+cd /opt/BingoApps
+git pull
+docker compose down
+docker compose up -d --build
+```
 
 ---
 
@@ -356,6 +402,9 @@ cd /opt/BingoApps && docker compose logs -f
 
 # 再起動
 cd /opt/BingoApps && docker compose restart
+
+# 再ビルド（コード更新後）
+cd /opt/BingoApps && git pull && docker compose up -d --build
 
 # Nginx 再起動
 systemctl restart nginx
