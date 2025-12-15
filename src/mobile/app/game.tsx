@@ -51,6 +51,7 @@ export default function GameScreen() {
     drawNumber,
     markNumber,
     declareBingo,
+    clearError,
   } = useSocket({
     roomId: roomId!,
     playerId: playerId!,
@@ -148,15 +149,6 @@ export default function GameScreen() {
       }
     }
   };
-
-  if (error) {
-    return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="alert-circle" size={64} color="#F44336" />
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
 
   // デスクトップ用2カラムレイアウト
   if (isDesktop) {
@@ -283,6 +275,22 @@ export default function GameScreen() {
             </View>
           </View>
         )}
+
+        {/* エラーモーダル */}
+        {error && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.errorModalContent}>
+              <Ionicons name="alert-circle" size={64} color="#F44336" />
+              <Text style={styles.errorModalText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.errorModalButton}
+                onPress={clearError}
+              >
+                <Text style={styles.modalButtonText}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     );
   }
@@ -394,6 +402,22 @@ export default function GameScreen() {
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => setShowWinnerModal(false)}
+            >
+              <Text style={styles.modalButtonText}>閉じる</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* エラーモーダル */}
+      {error && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.errorModalContent}>
+            <Ionicons name="alert-circle" size={64} color="#F44336" />
+            <Text style={styles.errorModalText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.errorModalButton}
+              onPress={clearError}
             >
               <Text style={styles.modalButtonText}>閉じる</Text>
             </TouchableOpacity>
@@ -579,6 +603,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 400,
+  },
+  errorModalText: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorModalButton: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 25,
   },
 
   // デスクトップスタイル

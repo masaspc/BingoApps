@@ -26,6 +26,7 @@ interface UseSocketReturn {
   drawNumber: (hostPin: string) => void;
   markNumber: (number: number) => void;
   declareBingo: () => void;
+  clearError: () => void;
 }
 
 export function useSocket({
@@ -100,6 +101,10 @@ export function useSocket({
     socketService.declareBingo(roomId, playerId);
   }, [roomId, playerId]);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
     room,
     players,
@@ -110,5 +115,6 @@ export function useSocket({
     drawNumber,
     markNumber,
     declareBingo,
+    clearError,
   };
 }
