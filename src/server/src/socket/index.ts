@@ -45,7 +45,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
         }
       } catch (error) {
         console.error('Error in join-room:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to join room' });
+        socket.emit(SOCKET_EVENTS.ERROR, { message: 'ルームへの参加に失敗しました' });
       }
     });
 
@@ -57,7 +57,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
         // ホストPIN検証
         const isValid = await roomService.verifyHostPin(roomId, hostPin);
         if (!isValid) {
-          socket.emit(SOCKET_EVENTS.ERROR, { message: 'Invalid host PIN' });
+          socket.emit(SOCKET_EVENTS.ERROR, { message: '司会者PINが正しくありません' });
           return;
         }
 
@@ -72,11 +72,11 @@ export function initializeSocket(httpServer: HttpServer): Server {
         if (result) {
           io.to(roomId).emit(SOCKET_EVENTS.NUMBER_DRAWN, result);
         } else {
-          socket.emit(SOCKET_EVENTS.ERROR, { message: 'No more numbers to draw' });
+          socket.emit(SOCKET_EVENTS.ERROR, { message: '抽選できる番号がありません' });
         }
       } catch (error) {
         console.error('Error in draw-number:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to draw number' });
+        socket.emit(SOCKET_EVENTS.ERROR, { message: '番号の抽選に失敗しました' });
       }
     });
 
@@ -92,7 +92,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
         }
       } catch (error) {
         console.error('Error in mark-number:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to mark number' });
+        socket.emit(SOCKET_EVENTS.ERROR, { message: '番号のマークに失敗しました' });
       }
     });
 
@@ -109,11 +109,11 @@ export function initializeSocket(httpServer: HttpServer): Server {
             card: result.card,
           });
         } else {
-          socket.emit(SOCKET_EVENTS.ERROR, { message: 'Invalid bingo declaration' });
+          socket.emit(SOCKET_EVENTS.ERROR, { message: 'まだビンゴではありません。縦・横・斜めのいずれかが揃うとビンゴです。' });
         }
       } catch (error) {
         console.error('Error in declare-bingo:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to declare bingo' });
+        socket.emit(SOCKET_EVENTS.ERROR, { message: 'ビンゴ宣言に失敗しました' });
       }
     });
 
