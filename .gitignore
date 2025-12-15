@@ -51,9 +51,6 @@ yarn-error.log*
 # Testing
 coverage/
 
-# Prisma
-src/server/prisma/migrations/
-
 # Temporary files
 *.tmp
 *.temp
