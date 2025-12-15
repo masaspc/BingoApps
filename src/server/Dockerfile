@@ -40,4 +40,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # マイグレーション実行後にサーバー起動
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/index.js"]
