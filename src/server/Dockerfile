@@ -2,9 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 依存関係ファイルをコピー
-COPY package*.json ./
-COPY prisma ./prisma/
+# 依存関係ファイルをコピー（コンテキストは ./src）
+COPY server/package*.json ./
+COPY server/prisma ./prisma/
 
 # 依存関係インストール（ビルドに必要なdevDependenciesも含む）
 RUN npm install
@@ -13,7 +13,9 @@ RUN npm install
 RUN npx prisma generate
 
 # ソースコードをコピー
-COPY . .
+COPY server/src ./src/
+COPY server/tsconfig.json ./
+COPY shared ./shared/
 
 # TypeScript ビルド
 RUN npm run build
