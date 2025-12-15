@@ -288,26 +288,51 @@ export const roomService = {
   async declareBingo(playerId: string): Promise<{ valid: boolean; card: BingoCard; player: Player } | null> {
     const dbCard = await prisma.bingoCard.findUnique({
       where: { playerId },
-      include: { player: true },
+      include: { player: { include: { room: true } } },
     });
 
     if (!dbCard) {
       return null;
     }
 
-    const card = toBingoCard(dbCard);
     const player = toPlayer(dbCard.player);
+    const numbers: number[][] = JSON.parse(dbCard.numbers);
+    const marked: boolean[][] = JSON.parse(dbCard.marked);
+
+    // ルームの抽選済み番号を取得して、カード上の該当番号を自動マーク
+    const drawnNumbers: number[] = JSON.parse(dbCard.player.room.drawnNumbers);
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        const num = numbers[row][col];
+        if (num !== 0 && drawnNumbers.includes(num)) {
+          marked[row][col] = true;
+        }
+      }
+    }
+
+    // 更新されたマーク状態をDBに保存
+    await prisma.bingoCard.update({
+      where: { playerId },
+      data: { marked: JSON.stringify(marked) },
+    });
 
     // ビンゴ判定
     const { checkBingo } = await import('../utils/random.js');
-    const valid = checkBingo(card.marked);
+    const valid = checkBingo(marked);
+
+    const card: BingoCard = {
+      id: dbCard.id,
+      playerId: dbCard.playerId,
+      numbers,
+      marked,
+      hasBingo: valid,
+    };
 
     if (valid) {
       await prisma.bingoCard.update({
         where: { playerId },
         data: { hasBingo: true },
       });
-      card.hasBingo = true;
     }
 
     return { valid, card, player };
